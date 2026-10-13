@@ -511,6 +511,21 @@ An attacker observing or intercepting the communication channel can view the Wor
 
 In some deployments the Workload Identity Token and PoP may pass through multiple systems. Communication between systems is over TLS, but the token and PoP are available in the clear at each intermediary.  While an intermediary cannot modify the token or the information within the PoP, it can attempt to capture and replay the token or modify data not protected by the PoP. Mitigations listed in {{wit-pop}} can reduce this risk. Deployments should analyze their situation to determine whether it is appropriate to trust and allow traffic to pass through a middlebox.
 
+## Trust Anchors Shared Between Trust Domains {#shared-trust-anchors}
+
+Nothing in this document prevents the same trust anchor, such as an X.509 certification authority or a WIT signing key, from being configured for more than one trust domain, and deployments do this in practice.
+When they do, successful cryptographic validation does not by itself tell the validator which trust domain a credential belongs to.
+For example, if trust domains `a.example` and `b.example` are both configured with the same certification authority,
+a WIC carrying the Workload Identifier `wimse://a.example/foo` builds a valid certification path against the trust anchors of either trust domain.
+That credential is a member of `a.example` only, never of `b.example`.
+
+Validators MUST therefore take the trust domain from the Workload Identifier in the credential, select the trust anchors configured for that trust domain ({{trust-anchors}}), and validate the credential against those trust anchors only.
+Successful validation against the trust anchors of a different trust domain, or against a trust store that merges the trust anchors of several trust domains, MUST NOT be treated as establishing membership in any trust domain.
+This applies to both the WIT (the `sub` claim) and the WIC (the URI SubjectAltName).
+
+A shared trust anchor also means that whoever controls it can issue credentials for every trust domain that trusts it, so those trust domains are not isolated from each other's issuers.
+Deployments SHOULD use distinct trust anchors for distinct trust domains, and where a trust anchor is shared, they need to trust its issuer for all of the trust domains concerned.
+
 # Privacy Considerations
 
 WITs and PoPs may contain private information such as user names or other identities. Care should be taken to prevent the disclosure of this information. The use of TLS helps protect the privacy of WITs and PoPs in transit. Workload Identity Certificates likewise expose the Workload Identifier, and any attributes carried in the certificate, to the peer, to any TLS-terminating intermediary, and to logs; in particular, client-certificate authentication discloses the client's workload identity to the server during the TLS handshake.
