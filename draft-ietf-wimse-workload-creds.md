@@ -132,12 +132,13 @@ Depending on the protocol, the workload authentication may happen during step (1
 The Workload Identifier is a URI and its baseline syntax and processing requirements are defined in {{!WIMSE-ID=I-D.ietf-wimse-identifier}}.
 While deployments define how they assign identifiers and what the path portion means, implementations MUST enforce the URI requirements outlined in {{Section 4.1 of WIMSE-ID}}.
 
-Prior to WIMSE, many containerized runtime platforms could not authenticate a peer as a specific workload;
-they could only establish that the peer belonged to a given trust domain.
-With mutual TLS (mTLS), for example, there is often no reliable way to map the external access name a client uses to reach a workload
+Validating a credential against the trust anchors of a trust domain establishes only that the peer belongs to that trust domain ({{trust-domain-membership}}).
+Authenticating the peer as a specific workload additionally requires comparing its identity with the one that was expected.
+This comparison is often hard in practice.
+With mutual TLS (mTLS), for example, there may be no reliable way to map the external access name a client uses to reach a workload
 (such as a Kubernetes Ingress path, service name, or HTTP Host header field)
 to a SubjectAltName in the presented certificate (DNSName or URI).
-As a result, the client can verify that the server certificate is valid within a trust domain,
+Without such a mapping, the client can verify that the server certificate is valid within a trust domain,
 but not that it belongs to the particular workload the client intended to reach.
 
 To enable granular authentication between workloads, the following must be in place:
@@ -151,6 +152,15 @@ Once these conditions are met, the methods described in this document can be use
 At the transport layer, the client validates the server certificate against that expected identifier
 as described in "Server Name Validation" of {{?I-D.ietf-wimse-mutual-tls}}.
 At the application layer, the callee verifies the audience of the proof of possession ({{app-audience}}).
+
+The information that tells a caller which identifier to expect, and that tells a callee which audience values refer to it,
+is often supplied by a service discovery, orchestration, or load-balancing system
+that associates external access names (such as DNS names, service names, or URIs) with workloads.
+This configuration is security-critical: if it is spoofed or misconfigured, a workload can be led to accept the wrong peer
+even though every credential validates.
+Workloads MUST obtain it from a source they trust, over a channel that is authenticated and integrity protected,
+as is the case for trust anchors ({{trust-anchors}}).
+How this configuration is provisioned is out of scope for this document.
 
 # Conventions and Definitions
 
@@ -451,6 +461,8 @@ When a deployment uses the `iss` claim for key distribution as described in {{wi
 Validating a peer's credential against the trust anchors for a trust domain establishes that the peer belongs to that trust domain, but does not by itself establish which workload the peer represents. The additional identity comparison described in {{granular-auth}} is required to make that distinction. This affects both sides of a call, workloads acting as clients and workloads acting as servers.
 
 Proof of possession does not mitigate this vulnerability. It shows that the peer holds the private key for the credential it presented ({{wit-pop}}), but it does not prove the identity iself. The same consideration applies when a Workload Identity Certificate is used at the transport layer.
+
+The identity comparison is only as trustworthy as the configuration it relies on: the association between the access name a caller uses and the Workload Identifier it expects, and the audience values a callee accepts as referring to itself ({{granular-auth}}). Credential validation does not protect this configuration. An attacker who can spoof or alter the service discovery, orchestration, or other system that supplies it can make a caller accept another workload of the same trust domain in place of the intended one, or make a callee accept proofs of possession that were meant for another workload. The systems that supply this configuration are therefore part of the deployment's trusted infrastructure, in the same way as the systems that distribute trust anchors ({{trust-anchors}}).
 
 ## Workload Identity Token and Proof of Possession {#wit-pop}
 

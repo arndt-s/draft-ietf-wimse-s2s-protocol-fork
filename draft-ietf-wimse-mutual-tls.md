@@ -87,7 +87,7 @@ When DNS hostname validation is required, the client MUST reject the connection 
 
 In deployments that use Workload Identity Certificates, successful DNS hostname validation authenticates the server endpoint, while the Workload Identifier provides an additional identity that can be used for workload-specific authorization and policy decisions.
 
-Some deployments may not use DNS names for server discovery. In such cases, the client MUST be configured with sufficient information to determine the expected Workload Identifier of the server and MUST validate the Workload Identifier in the server's certificate against that expectation before accepting the connection.
+Some deployments may not use DNS names for server discovery. In such cases, the client MUST be configured with sufficient information to determine the expected Workload Identifier of the server and MUST validate the Workload Identifier in the server's certificate against that expectation before accepting the connection. That configuration MUST come from a trusted source, as described in {{Section 1.3 of WIMSE-CREDS}}.
 
 Connecting directly to an IP address does not require an IP address subjectAltName when the client authenticates the server using its expected Workload Identifier. If the client additionally requires authentication of the server's IP address, it MUST validate a matching iPAddress subjectAltName (IP-ID) as specified in {{Section 6.4 of TLS-IDENTITY}}. If no matching IP-ID is present, the client MUST reject the connection, even if Workload Identifier validation succeeds.
 
