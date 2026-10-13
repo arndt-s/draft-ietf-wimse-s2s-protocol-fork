@@ -219,7 +219,7 @@ Table of Contents
 
    1.  A transport connection is set up.  This may already include the
        use of the Workload Identity Certificate with transport-layer
-       security, such as mutual TLS.
+       security, such as TLS.
 
    2.  Workload A prepares to call Workload B.  This may include adding
        application-layer authentication information, such as the
