@@ -162,7 +162,7 @@ All terminology in this document follows {{?I-D.ietf-wimse-arch}}.
 
 This document expects that trust anchors used to validate Workload Identity Certificates and Workload Identity Tokens are associated with a trust domain and are provisioned to consumers together with trust domain metadata for that domain. Trust anchors can be represented in different ways depending on the deployment; for example, as a set of public keys (such as a JWKS), as an X.509 certification authority used to validate certificate chains, or as other deployment-specific material.
 
-This document does not define a mechanism for discovering trust anchor information. Consumers MUST bind each trust domain to an authorized issuer (or set of issuers) and to the corresponding trust anchors. That mapping MUST be distributed via a secure out-of-band mechanism. In particular, for a WIT the `iss` claim (the JWT issuer claim {{RFC7519}}, defined in {{to-wit}}) MUST NOT be used to look up trust anchor material directly from information carried only in the token (such as by fetching a JWKS from a URL found only in the WIT).
+This document does not define a mechanism for discovering trust anchor information. Consumers MUST bind each trust domain to an authorized issuer (or set of issuers) and to the corresponding trust anchors. That mapping MUST be distributed via a secure out-of-band mechanism. In particular, for a WIT the `iss` claim (the JWT issuer claim {{RFC7519}}, defined in {{to-wit}}) MUST NOT be used to look up trust anchor material directly from information carried only in the WIT (such as by fetching a JWKS from a URL found only in the WIT).
 
 To validate a WIT, the receiving workload verifies the JWS signature using key material from the trust anchors configured for the trust domain in the `sub` claim. Trust anchor material for WIT validation MAY include more than one public key so that operators can rotate signing keys. In practice, the `alg` header parameter would identify an algorithm that the validator accepts for that trust domain, and the signature would be checked under a key drawn from the configured trust anchors. If the JWS header contains a `kid` parameter, the validator would use the key in the trust anchor material with the same `kid` value. If `kid` is absent, deployment policy would need to provide unambiguous key selection (for example, when only a single key is configured for that trust domain). Recipient processing of a presented WIT is specified in {{wit-validation}}.
 
@@ -174,7 +174,7 @@ Each WIMSE credential carries exactly one Workload Identifier ({{WIMSE-ID}}) tha
 
 For a Workload Identity Token, that identifier is the value of the `sub` claim. For a Workload Identity Certificate, that identifier is carried in the single URI SubjectAltName described in {{to-wic}}. Deployments that distinguish several labels for the same runtime (for example a stable service identity and a specific instance) MUST place only one identifier into it.
 
-Additional correlation for logging or operations MUST NOT be encoded as a second Workload Identifier in the same WIT or WIC. This restriction applies only to Workload Identifiers; deployments MAY use other mechanisms for correlation, interoperability, or integration purposes, such as the optional `jti` claim, a DNSName SubjectAltName, separate credentials, or additional claims as described in {{add-claims}}.
+Additional correlation for logging or operations MUST NOT be encoded as a second Workload Identifier in the same WIT or WIC. This restriction applies only to Workload Identifiers; deployments MAY use other mechanisms for correlation, interoperability, or integration purposes, such as a DNSName SubjectAltName, separate credentials, or additional claims as described in {{add-claims}}.
 
 # Application-Layer Credentials {#app-layer}
 
@@ -544,7 +544,7 @@ Interoperability considerations: N/A
 
 Published specification: RFC XXX, {{to-wit}}.
 
-Applications that use this media type: Identity Servers that vend Workload Identity Tokens, and workloads that
+Applications that use this media type: Identity Servers that issue Workload Identity Tokens, and workloads that
 use these tokens to authenticate to each other.
 
 Fragment identifier considerations: N/A
