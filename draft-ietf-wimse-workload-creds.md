@@ -97,35 +97,66 @@ The various protocol bindings that use these credentials to authenticate workloa
 
 This architecture and message flow is part of the broader flow as described in Section 3.3 of the WIMSE architecture {{?I-D.ietf-wimse-arch}}.
 
-Independent of the transport between the workloads, we assume that workloads hold credentials from the same trust domain and that following architecture applies:
+We assume that workloads hold credentials from the same trust domain.
+In all cases, the connection between the workloads is protected by TLS that at least authenticates the server, or by an equivalent secure channel ({{middleboxes}}).
+The two credentials defined in this document are used at different points of that exchange, as shown in the following two flows.
+A deployment can also use both, for example mutual TLS with a WIC and, in addition, a WIT with a proof of possession.
+
+### Transport-Layer Authentication with the WIC {#flow-wic}
 
 ~~~ aasvg
-+------------+               +------------+
-|            |      (1)      |            |
-|            |<=============>|            |
-|            |               |            |
-| Workload A |      (2)      | Workload B |
-|            |==============>|            |
-|            |               |            |--+
-|            |               |            |  | (3)
-|            |               |            |<-+
-|            |      (4)      |            |
-|            |<==============|            |
-+------------+               +------------+
++------------+                    +------------+
+|            |        (1)         |            |
+|            |<==================>|            |
+|            | mutual TLS (WICs)  |            |
+| Workload A |                    | Workload B |
+|            |        (2)         |            |
+|            |------------------->|            |
+|            |                    |            |--+
+|            |                    |            |  | (3)
+|            |                    |            |<-+
+|            |        (4)         |            |
+|            |<-------------------|            |
++------------+                    +------------+
 ~~~
-{: #high-level-seq title="Sequence of Operations"}
+{: #wic-flow title="Authentication with the Workload Identity Certificate"}
 
-The high-level message flow is as follows:
-
-1. A transport connection is set up. This may already include the use of the Workload Identity Certificate with transport-layer security, such as TLS.
-
-2. Workload A prepares to call Workload B. This may include adding application-layer authentication information, such as the Workload Identity Token and proof of possession. Workload B authenticates Workload A.
-
-3. Workload B authorizes Workload A and the call.
-
+1. Workload A opens a mutual TLS connection to Workload B. Both workloads present their WICs.
+   Workload A validates the server certificate against the identity it expects for Workload B ({{granular-auth}}),
+   and Workload B validates the client certificate.
+   After this step, each side has authenticated the other.
+2. Workload A sends its request over the connection.
+3. Workload B authorizes Workload A and the request, using the Workload Identifier from Workload A's certificate ({{client-name}}).
 4. Workload B returns a response to Workload A, which may be either a success or an error response.
 
-Depending on the protocol, the workload authentication may happen during step (1) at the transport-layer or at step (2) at the application-layer, or both.
+### Application-Layer Authentication with the WIT {#flow-wit}
+
+~~~ aasvg
++------------+                    +------------+
+|            |        (1)         |            |
+|            |<==================>|            |
+|            |  server-auth TLS   |            |
+| Workload A |                    | Workload B |
+|            |        (2)         |            |
+|            |------------------->|            |
+|            |   WIT + PoP        |            |--+
+|            |                    |            |  | (3)
+|            |                    |            |<-+
+|            |        (4)         |            |
+|            |<-------------------|            |
++------------+                    +------------+
+~~~
+{: #wit-flow title="Authentication with the Workload Identity Token"}
+
+1. Workload A opens a TLS connection that authenticates the server. The connection may end at an intermediary,
+   in which case further TLS connections carry the request on to Workload B.
+   Workload A is not authenticated in this step.
+2. Workload A sends its request together with its WIT and a proof of possession of the WIT's key.
+   The proof of possession is bound to the request and names Workload B as its audience.
+3. Workload B validates the WIT ({{wit-validation}}) and the proof of possession, including its audience ({{app-audience}}),
+   which authenticates Workload A. Workload B then authorizes Workload A and the request, using the `sub` claim of the WIT ({{client-name}}).
+4. Workload B returns a response to Workload A, which may be either a success or an error response.
+   Some proof-of-possession mechanisms can also protect the response.
 
 ## Workload Identifiers and Authentication Granularity {#granular-auth}
 
